@@ -15,10 +15,10 @@ import nos_class_multi_dimensional as nos_class_multi_dimensional
 
 #######################################################################################
 d = 2
-n_path = 500000
-batch_size = 1000
+n_path = int(5e8)
+batch_size = 1e7
 n_simulation = 50
-epochs = 100
+epochs = 200
 spot = 100
 sigma = 0.2
 rate = 0.05
@@ -92,7 +92,6 @@ plt.close()
 
 def plot_region(t):
 
-    t = 0
     x = np.linspace(50, 200, 100)
     y = np.linspace(50, 200, 100)
     X, Y = np.meshgrid(x, y)
