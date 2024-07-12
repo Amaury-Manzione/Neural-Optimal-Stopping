@@ -7,7 +7,9 @@ import torch
 from torch import nn
 from tqdm import tqdm
 
-import ito_process as ito
+sys.path.append("..")
+
+import diffusion.ito_process as ito
 
 torch.autograd.set_detect_anomaly(True)
 
@@ -157,7 +159,7 @@ class NosMultiDimensional:
         )
 
         # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.02)
-        paths, Z = self.asset[0].get_path_importance_sampling_test(
+        paths, Z = self.asset[0].get_path_importance_sampling_multi_dim(
             d, n_simulation, dt, n_path, l_girsanov, d
         )
         paths, Z = torch.tensor(paths, requires_grad=False, dtype=float), torch.tensor(

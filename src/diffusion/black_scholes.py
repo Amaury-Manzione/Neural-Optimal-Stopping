@@ -1,6 +1,7 @@
 import numpy as np
+import torch
 
-import ito_process as ito_process
+import src.diffusion.ito_process as ito_process
 
 
 class BlackScholes(ito_process.ItoProcess):
@@ -64,6 +65,48 @@ class BlackScholes(ito_process.ItoProcess):
 
         for i in range(1, n):
             process[:, i] = process[:, i - 1] * np.exp(
+                (self.r - self.dividend - 0.5 * self.sigma**2) * dt
+                + self.sigma * BM[:, i - 1]
+            )
+
+        return process
+
+    def get_path_tensor(self, n: int, dt: float, N: int, seed=None) -> torch.Tensor:
+        """
+        Simulate paths using explicit simulation of X_t :
+        X_i+1 = X_i*(b(X_i) - (sigma(X_i)^2)/2*dt + sigma(X_i)*(BM[i],BM[i-1]))
+
+        Parameters
+        ----------
+        n : int
+            Number of time steps
+        dt : float
+            Time step size
+        N : int
+            Number of paths
+        seed : None or int
+            Seed for fixing randomness
+
+        Returns
+        -------
+        torch.Tensor
+            Tensor containing the simulated paths
+        """
+
+        if seed is not None:
+            torch.manual_seed(seed)
+
+        # Initialize the process tensor
+        process = torch.zeros((N, n))
+
+        # Brownian Motion increments
+        BM = torch.normal(mean=0.0, std=torch.sqrt(torch.tensor(dt)), size=(N, n))
+
+        # Set the initial value
+        process[:, 0] = self.x0
+
+        for i in range(1, n):
+            process[:, i] = process[:, i - 1] * torch.exp(
                 (self.r - self.dividend - 0.5 * self.sigma**2) * dt
                 + self.sigma * BM[:, i - 1]
             )
@@ -157,7 +200,7 @@ class BlackScholes(ito_process.ItoProcess):
 
         return process, Z
 
-    def get_path_importance_sampling_test(
+    def get_path_importance_sampling_multi_dim(
         self, d: int, n: int, dt: float, N: float, l: float, seed=None
     ) -> np.array:
         """_summary_

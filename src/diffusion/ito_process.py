@@ -61,6 +61,9 @@ class ItoProcess:
 
         return process
 
+    def get_path_tensor(self, n: int, dt: float, N: int, seed=None):
+        pass
+
     def get_path_correlated(
         self, n: int, dt: float, N: int, corr_matrix: np.array, seed=None
     ) -> np.array:
@@ -107,3 +110,6 @@ class ItoProcess:
         self, n: int, dt: float, N: float, l: float, seed=None
     ):
         return
+
+    def get_path_importance_sampling_multi_dim(self):
+        pass

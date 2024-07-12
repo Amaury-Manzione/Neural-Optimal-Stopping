@@ -10,10 +10,15 @@ matplotlib = "*"
 torch = "*"
 jupyter = "*"
 numpy = "<2"
+gymnasium = "*"
+tensordict = "*"
+torchrl = "*"
+optuna = "*"
 
 [dev-packages]
 black = "*"
 isort = "*"
+optuna-dashboard = "*"
 
 [requires]
 python_version = "3.11"
