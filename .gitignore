@@ -48,6 +48,8 @@ $RECYCLE.BIN/
 *.lnk
 
 src/dqn/*.db
+graphes/
+
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,visualstudiocode
 

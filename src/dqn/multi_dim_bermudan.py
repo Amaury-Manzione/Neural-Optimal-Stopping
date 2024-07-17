@@ -1,6 +1,6 @@
 import sys
 import time as time
-from typing import Callable
+from typing import Callable, List
 
 import gymnasium as gym
 import matplotlib.pyplot as plt
@@ -14,12 +14,12 @@ import src.diffusion.ito_process as ito_process
 import src.dqn.agent as agent
 
 
-class OneDimensionalBermudan:
+class MultiDimensionalBermudan:
     """Class representing a bermudan option priced with deep q-learning paradigm."""
 
     def __init__(
         self,
-        process: ito_process.ItoProcess,
+        process: List[ito_process.ItoProcess],
         payoff: Callable,
         maturity: float,
         rate: float,
@@ -52,24 +52,29 @@ class OneDimensionalBermudan:
         )
         stopping_time = list_times[stopping_time_index].item()
         reward = torch.exp(torch.tensor(-self.rate * dt * stopping_time)) * self.payoff(
-            paths[episode, stopping_time]
+            paths[episode, stopping_time, :]
+        )
+        input_to_tensor = torch.cat(
+            (paths[episode, stopping_time, :], torch.tensor([stopping_time * dt]))
         )
         self.myagent.add_to_replay_buffer(
-            torch.tensor(
-                [paths[episode, stopping_time], stopping_time * dt], dtype=torch.double
-            ),
-            torch.tensor(
-                [paths[episode, stopping_time], stopping_time * dt], dtype=torch.double
-            ),
+            input_to_tensor.to(torch.double),
+            input_to_tensor.to(torch.double),
             reward,
             torch.tensor(0),
             torch.tensor(1),
             torch.tensor(stopping_time, dtype=torch.float),
         )
         for i in range(stopping_time - 1):
+            state_to_tensor = input_to_tensor = torch.cat(
+                (paths[episode, i, :], torch.tensor([i * dt]))
+            )
+            new_state_to_tensor = input_to_tensor = torch.cat(
+                (paths[episode, i + 1, :], torch.tensor([(i + 1) * dt]))
+            )
             self.myagent.add_to_replay_buffer(
-                torch.tensor([paths[episode, i], i * dt]),
-                torch.tensor([paths[episode, i + 1], (i + 1) * dt]),
+                state_to_tensor.to(torch.double),
+                new_state_to_tensor.to(torch.double),
                 torch.tensor(0),
                 torch.tensor(1),
                 torch.tensor(0),
@@ -81,28 +86,23 @@ class OneDimensionalBermudan:
     def exploit(self, episode, paths, dt):
         done = False
         current_time = 1
-        state = paths[episode, current_time]
+        state = paths[episode, current_time, :]
         n = paths.shape[1]
         reward = torch.tensor(0)
         while not done:
-            state_time = torch.tensor([state, current_time * dt], dtype=torch.double)
-            actions = self.myagent.get_Q(state_time)
+            state_time = torch.cat((state, torch.tensor([current_time * dt])))
+            actions = self.myagent.get_Q(state_time.to(torch.double))
             action = torch.argmax(actions).item()
             if action == 0 or current_time == n - 1:
+                input_to_tensor = torch.cat((state, torch.tensor([current_time * dt])))
                 reward = torch.exp(
                     torch.tensor(-self.rate * dt * current_time)
                 ) * self.payoff(state)
                 done = True
                 action = 0
                 self.myagent.add_to_replay_buffer(
-                    torch.tensor(
-                        [state, current_time * dt],
-                        dtype=torch.double,
-                    ),
-                    torch.tensor(
-                        [state, current_time * dt],
-                        dtype=torch.double,
-                    ),
+                    input_to_tensor.to(torch.double),
+                    input_to_tensor.to(torch.double),
                     reward,
                     torch.tensor(action),
                     torch.tensor(int(done)),
@@ -110,15 +110,15 @@ class OneDimensionalBermudan:
                 )
             else:
                 new_state = paths[episode, current_time + 1]
+                state_to_tensor = input_to_tensor = torch.cat(
+                    (state, torch.tensor([current_time * dt]))
+                )
+                new_state_to_tensor = input_to_tensor = torch.cat(
+                    (new_state, torch.tensor([(current_time + 1) * dt]))
+                )
                 self.myagent.add_to_replay_buffer(
-                    torch.tensor(
-                        [state, current_time * dt],
-                        dtype=torch.double,
-                    ),
-                    torch.tensor(
-                        [new_state, (current_time + 1) * dt],
-                        dtype=torch.double,
-                    ),
+                    state_to_tensor.to(torch.double),
+                    new_state_to_tensor.to(torch.double),
                     reward,
                     torch.tensor(action),
                     torch.tensor(int(done)),
@@ -144,12 +144,19 @@ class OneDimensionalBermudan:
         batch_size : float
             size of the batches
         """
+        # dimension
+        d = len(self.process)
+
         # timestep
         dt = float(self.maturity / n_simulation)
         list_times = torch.tensor([i for i in range(n_simulation)])
 
         # loading the environment
-        paths = self.process.get_path_tensor(n_simulation, dt, n_episodes, seed)
+        paths = torch.zeros(n_episodes, n_simulation, d)
+        for i in range(d):
+            paths[:, :, i] = self.process[i].get_path_tensor(
+                n_simulation, dt, n_episodes, seed
+            )
 
         # history of rewards per episode
         history_batch_reward = torch.zeros(n_episodes)

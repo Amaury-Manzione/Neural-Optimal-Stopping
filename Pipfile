@@ -14,6 +14,8 @@ gymnasium = "*"
 tensordict = "*"
 torchrl = "*"
 optuna = "*"
+pandas = "*"
+seaborn = "*"
 
 [dev-packages]
 black = "*"

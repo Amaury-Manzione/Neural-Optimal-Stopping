@@ -24,7 +24,7 @@ n_simulation = 50
 d = 1
 replay_memory_init = 10000
 replay_memory_capacity = 100000
-num_episodes = 3000
+num_episodes = 20000
 
 # hyperparameters
 epsilon = 0.01
@@ -43,11 +43,12 @@ def objective(trial):
     batch_size_list = trial.suggest_int("batch_size", 100, 20000)
     learning_rate_list = trial.suggest_float("learning_rate", 1e-6, 1e-1)
     N_update_list = trial.suggest_int("N_update", 10, 300)
+    replay_memory_init_list = trial.suggest_int("replay_memory_init", 3000, 30000)
     myagent = agent.Agent(
         epsilon,
         epsilon_decay,
         epsilon_max,
-        replay_memory_init,
+        replay_memory_init_list,
         replay_memory_capacity,
         N_update_list,
         learning_rate_list,
@@ -67,7 +68,7 @@ def objective(trial):
 study = optuna.create_study(
     study_name="example_study",
     storage="sqlite:///example_study_bis.db",
-    directions=["minimize", "maximize"],
+    directions=["maximize", "minimize"],
     load_if_exists=True,
 )
 
@@ -80,7 +81,7 @@ if torch.cuda.is_available():
 else:
     number_cores = cpu_count()
 
-study.optimize(objective, n_trials=10, n_jobs=number_cores)
+study.optimize(objective, n_trials=300, n_jobs=number_cores)
 
 print("Best trials:")
 for i, trial in enumerate(study.best_trials):

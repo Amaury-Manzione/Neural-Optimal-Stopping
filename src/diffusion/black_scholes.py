@@ -113,49 +113,6 @@ class BlackScholes(ito_process.ItoProcess):
 
         return process
 
-    def get_path_correlated(
-        self, n: int, dt: float, N: int, corr_matrix: np.array, seed=None
-    ) -> np.array:
-        """Return correlated paths with exact scheme
-
-        Parameters
-        ----------
-        n : int
-           number of simulation
-        dt : float
-            timestep
-        N : int
-            number of paths simulated
-        corr_matrix : np.array
-            correlation matrix
-        seed : _type_, optional
-            for fixing randomness, by default None
-
-        Returns
-        -------
-        np.array
-            _description_
-        """
-
-        np.random.seed(seed)
-
-        process = np.zeros((N, n))
-        L = np.linalg.cholesky(corr_matrix)
-
-        BM = np.random.normal(0, np.sqrt(dt), (N, n))
-        for i in range(n):
-            BM[:, i] = np.matmul(L, BM[:, i])
-
-        process[:, 0] = self.x0
-
-        for i in range(1, n):
-            process[:, i] = process[:, i - 1] * np.exp(
-                (self.r - self.dividend - 0.5 * self.sigma**2) * dt
-                + self.sigma * BM[:, i - 1]
-            )
-
-        return process
-
     def get_path_importance_sampling(
         self, n: int, dt: float, N: float, l: float, seed=None
     ) -> np.array:

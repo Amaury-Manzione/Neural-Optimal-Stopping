@@ -224,6 +224,10 @@ class Agent:
             non_zero_rewards = batch["reward"].masked_select(non_zero_mask)
             history_reward = torch.mean(non_zero_rewards)
 
+            # stopped_pos = batch["pos"].masked_select(non_zero_mask)
+            # if torch.mean(stopped_pos) > 25:
+            #     loss = loss + 10
+
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
@@ -236,14 +240,7 @@ class Agent:
         """
         self.target_network.load_state_dict(self.online_network.state_dict())
 
-    def add_to_replay_buffer(
-        self,
-        current_state: float,
-        new_state: float,
-        reward: float,
-        action: int,
-        done: bool,
-    ):
+    def add_to_replay_buffer(self, current_state, new_state, reward, action, done, pos):
         """add experience to replay buffer
 
         Parameters
@@ -263,6 +260,7 @@ class Agent:
                     "action": action,
                     "reward": reward,
                     "done": done,
+                    "pos": pos,
                 },
                 batch_size=[],
             )
