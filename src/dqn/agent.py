@@ -70,9 +70,8 @@ class TargetNN(nn.Module):
 
         self.double()
 
-        if freeze:
-            for p in self.parameters():
-                p.requires_grad = False
+        for p in self.parameters():
+            p.requires_grad = False
 
     def forward(self, x):
         # x = nn.functional.normalize(x)
